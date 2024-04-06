@@ -113,7 +113,7 @@ public class TestBackupVerification {
     }
 
     @Test
-    public void verifyBackupVersion1DateRange() throws Exception {
+    public void testGettingBackupMetadataBeforeValidation() throws Exception {
         setUp();
         List<BackupMetadata> backupMetadata =
                 backupStatusMgr.getLatestBackupMetadata(
