@@ -23,6 +23,7 @@ import com.netflix.priam.backupv2.BackupV2Service;
 import com.netflix.priam.backupv2.IMetaProxy;
 import com.netflix.priam.backupv2.SnapshotMetaTask;
 import com.netflix.priam.config.IConfiguration;
+import com.netflix.priam.notification.BackupNotificationMgr;
 import com.netflix.priam.utils.DateUtil;
 import com.netflix.priam.utils.DateUtil.DateRange;
 import com.netflix.priam.utils.GsonJsonSerializer;
@@ -53,6 +54,7 @@ public class BackupServletV2 {
     private final IMetaProxy metaProxy;
     private final Provider<AbstractBackupPath> pathProvider;
     private final BackupV2Service backupService;
+    private final BackupNotificationMgr backupNotificationMgr;
     private static final String REST_SUCCESS = "[\"ok\"]";
 
     @Inject
@@ -65,7 +67,8 @@ public class BackupServletV2 {
             IBackupFileSystem fileSystem,
             @Named("v2") IMetaProxy metaV2Proxy,
             Provider<AbstractBackupPath> pathProvider,
-            BackupV2Service backupService) {
+            BackupV2Service backupService,
+            BackupNotificationMgr backupNotificationMgr) {
         this.backupStatusMgr = backupStatusMgr;
         this.backupVerification = backupVerification;
         this.snapshotMetaService = snapshotMetaService;
@@ -74,6 +77,7 @@ public class BackupServletV2 {
         this.metaProxy = metaV2Proxy;
         this.pathProvider = pathProvider;
         this.backupService = backupService;
+        this.backupNotificationMgr = backupNotificationMgr;
     }
 
     @GET
@@ -130,6 +134,17 @@ public class BackupServletV2 {
                     .entity("No valid meta found for provided time range")
                     .build();
         }
+
+        // Send notification for any verified backups. This is useful in one-off backup consumption
+        // by downward dependencies.
+        // Side-effect: It may send notification for already verified snapshot i.e. duplicate
+        // message may be sent.
+        logger.info(
+                "Sending {} message for backup: {}",
+                AbstractBackupPath.BackupFileType.SNAPSHOT_VERIFIED,
+                result.get().remotePath);
+
+        backupNotificationMgr.notify(result.get().remotePath, result.get().snapshotInstant);
 
         return Response.ok(result.get().toString()).build();
     }
