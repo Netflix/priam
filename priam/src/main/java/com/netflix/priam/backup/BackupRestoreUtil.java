@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableMap;
 import com.netflix.priam.backupv2.IMetaProxy;
 import com.netflix.priam.utils.DateUtil;
 import java.nio.file.Path;
-import java.time.Instant;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -81,19 +80,6 @@ public class BackupRestoreUtil {
                         .collect(Collectors.toList());
         FileUtils.deleteQuietly(metaFile.toFile());
         return snapshotPaths;
-    }
-
-    public static List<AbstractBackupPath> getIncrementalPaths(
-            AbstractBackupPath latestValidMetaFile,
-            DateUtil.DateRange dateRange,
-            IMetaProxy metaProxy) {
-        Instant snapshotTime;
-        snapshotTime = latestValidMetaFile.getLastModified();
-        DateUtil.DateRange incrementalDateRange =
-                new DateUtil.DateRange(snapshotTime, dateRange.getEndTime());
-        List<AbstractBackupPath> incrementalPaths = new ArrayList<>();
-        metaProxy.getIncrementals(incrementalDateRange).forEachRemaining(incrementalPaths::add);
-        return incrementalPaths;
     }
 
     public static Map<String, List<String>> getFilter(String inputFilter)

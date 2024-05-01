@@ -17,6 +17,7 @@
 
 package com.netflix.priam.backupv2;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.priam.backup.AbstractBackupPath;
 import com.netflix.priam.backup.BackupRestoreException;
 import com.netflix.priam.backup.BackupVerificationResult;
@@ -31,8 +32,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import javax.inject.Inject;
 import javax.inject.Provider;
-import org.apache.commons.collections4.iterators.FilterIterator;
-import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -84,7 +83,7 @@ public class MetaV2Proxy implements IMetaProxy {
     }
 
     @Override
-    public Iterator<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange) {
+    public ImmutableList<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange) {
         String incrementalPrefix = getMatch(dateRange, AbstractBackupPath.BackupFileType.SST_V2);
         String marker =
                 getMatch(
@@ -96,18 +95,15 @@ public class MetaV2Proxy implements IMetaProxy {
                 marker,
                 dateRange);
         Iterator<String> iterator = fs.listFileSystem(incrementalPrefix, null, marker);
-        Iterator<AbstractBackupPath> transformIterator =
-                new TransformIterator<>(
-                        iterator,
-                        s -> {
-                            AbstractBackupPath path = abstractBackupPathProvider.get();
-                            path.parseRemote(s);
-                            return path;
-                        });
-
-        return new FilterIterator<>(
-                transformIterator,
-                abstractBackupPath -> dateRange.contains(abstractBackupPath.getLastModified()));
+        ImmutableList.Builder<AbstractBackupPath> results = ImmutableList.builder();
+        while (iterator.hasNext()) {
+            AbstractBackupPath path = abstractBackupPathProvider.get();
+            path.parseRemote(iterator.next());
+            if (dateRange.contains(path.getLastModified())) {
+                results.add(path);
+            }
+        }
+        return results.build();
     }
 
     @Override

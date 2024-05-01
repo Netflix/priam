@@ -153,25 +153,19 @@ public class BackupServletV2 {
     @Path("/list/{daterange}")
     public Response list(@PathParam("daterange") String daterange) throws Exception {
         DateUtil.DateRange dateRange = new DateUtil.DateRange(daterange);
-        // Find latest valid meta file.
-        Optional<AbstractBackupPath> latestValidMetaFile =
+        Optional<AbstractBackupPath> metaFile =
                 BackupRestoreUtil.getLatestValidMetaPath(metaProxy, dateRange);
-        if (!latestValidMetaFile.isPresent()) {
+        if (!metaFile.isPresent()) {
             return Response.ok("No valid meta found!").build();
         }
-        List<AbstractBackupPath> allFiles =
+        List<AbstractBackupPath> files =
                 BackupRestoreUtil.getMostRecentSnapshotPaths(
-                        latestValidMetaFile.get(), metaProxy, pathProvider);
-        allFiles.addAll(
-                BackupRestoreUtil.getIncrementalPaths(
-                        latestValidMetaFile.get(), dateRange, metaProxy));
-
-        return Response.ok(
-                        GsonJsonSerializer.getGson()
-                                .toJson(
-                                        allFiles.stream()
-                                                .map(AbstractBackupPath::getRemotePath)
-                                                .collect(Collectors.toList())))
-                .build();
+                        metaFile.get(), metaProxy, pathProvider);
+        DateUtil.DateRange incrementalDateRange =
+                new DateRange(metaFile.get().getLastModified(), dateRange.getEndTime());
+        files.addAll(metaProxy.getIncrementals(incrementalDateRange));
+        List<String> remotePaths =
+                files.stream().map(AbstractBackupPath::getRemotePath).collect(Collectors.toList());
+        return Response.ok(GsonJsonSerializer.getGson().toJson(remotePaths)).build();
     }
 }

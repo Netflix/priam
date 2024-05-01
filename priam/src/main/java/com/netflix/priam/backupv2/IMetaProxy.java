@@ -17,12 +17,12 @@
 
 package com.netflix.priam.backupv2;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.priam.backup.AbstractBackupPath;
 import com.netflix.priam.backup.BackupRestoreException;
 import com.netflix.priam.backup.BackupVerificationResult;
 import com.netflix.priam.utils.DateUtil;
 import java.nio.file.Path;
-import java.util.Iterator;
 import java.util.List;
 
 /** Proxy to do management tasks for meta files. Created by aagrawal on 12/18/18. */
@@ -78,7 +78,7 @@ public interface IMetaProxy {
      * @param dateRange the time period to scan in the remote file system for incremental files.
      * @return iterator containing the list of path on the remote file system satisfying criteria.
      */
-    Iterator<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange);
+    ImmutableList<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange);
 
     /**
      * Validate that all the files mentioned in the meta file actually exists on remote file system.
