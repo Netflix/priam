@@ -47,7 +47,6 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
             ImmutableMap.of(BackupFolder.BACKUPS, 3, BackupFolder.SNAPSHOTS, 4);
 
     public enum BackupFileType {
-        CL,
         META_V2,
         SECONDARY_INDEX_V2,
         SNAPSHOT_VERIFIED,
@@ -149,9 +148,6 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
         File return_;
         String dataDir = config.getDataFileLocation();
         switch (type) {
-            case CL:
-                return_ = new File(PATH_JOINER.join(config.getBackupCommitLogLocation(), fileName));
-                break;
             case SECONDARY_INDEX_V2:
                 String restoreFileName =
                         PATH_JOINER.join(dataDir, keyspace, columnFamily, indexDir, fileName);
