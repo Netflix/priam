@@ -107,17 +107,7 @@ public class MetaV2Proxy implements IMetaProxy {
 
         return new FilterIterator<>(
                 transformIterator,
-                abstractBackupPath ->
-                        (abstractBackupPath.getLastModified().isAfter(dateRange.getStartTime())
-                                        && abstractBackupPath
-                                                .getLastModified()
-                                                .isBefore(dateRange.getEndTime()))
-                                || abstractBackupPath
-                                        .getLastModified()
-                                        .equals(dateRange.getStartTime())
-                                || abstractBackupPath
-                                        .getLastModified()
-                                        .equals(dateRange.getEndTime()));
+                abstractBackupPath -> dateRange.contains(abstractBackupPath.getLastModified()));
     }
 
     @Override
@@ -136,10 +126,7 @@ public class MetaV2Proxy implements IMetaProxy {
             AbstractBackupPath abstractBackupPath = abstractBackupPathProvider.get();
             abstractBackupPath.parseRemote(iterator.next());
             logger.debug("Meta file found: {}", abstractBackupPath);
-            if (abstractBackupPath.getLastModified().toEpochMilli()
-                            >= dateRange.getStartTime().toEpochMilli()
-                    && abstractBackupPath.getLastModified().toEpochMilli()
-                            <= dateRange.getEndTime().toEpochMilli()) {
+            if (dateRange.contains(abstractBackupPath.getLastModified())) {
                 metas.add(abstractBackupPath);
             }
         }

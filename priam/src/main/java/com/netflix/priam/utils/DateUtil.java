@@ -215,6 +215,10 @@ public class DateUtil {
             return endTime;
         }
 
+        public boolean contains(Instant instant) {
+            return startTime.compareTo(instant) <= 0 && endTime.compareTo(instant) >= 0;
+        }
+
         public String toString() {
             return GsonJsonSerializer.getGson().toJson(this);
         }
