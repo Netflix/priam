@@ -17,6 +17,7 @@
 
 package com.netflix.priam.backupv2;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
@@ -131,7 +132,16 @@ public class TestMetaV2Proxy {
     @Test
     public void testGetIncrementalFiles() throws Exception {
         DateUtil.DateRange dateRange = new DateUtil.DateRange("202812071820,20281229");
-        Truth.assertThat(metaProxy.getIncrementals(dateRange)).hasSize(3);
+        ImmutableList<AbstractBackupPath> paths = metaProxy.getIncrementals(dateRange);
+        Truth.assertThat(paths).hasSize(4);
+    }
+
+    @Test
+    public void testGetIncrementalFilesIncludesSecondaryIndexes() throws Exception {
+        DateUtil.DateRange dateRange = new DateUtil.DateRange("202812071820,20281229");
+        ImmutableList<AbstractBackupPath> paths = metaProxy.getIncrementals(dateRange);
+        Truth.assertThat(paths.get(3).getType())
+                .isEqualTo(AbstractBackupPath.BackupFileType.SECONDARY_INDEX_V2);
     }
 
     @Test
@@ -221,6 +231,17 @@ public class TestMetaV2Proxy {
                         "SNAPPY",
                         "PLAINTEXT",
                         "file4-Data.db"));
+        files.add(
+                Paths.get(
+                        getPrefix(),
+                        AbstractBackupPath.BackupFileType.SECONDARY_INDEX_V2.toString(),
+                        "1859828420000",
+                        "keyspace1",
+                        "columnfamily1",
+                        "index1",
+                        "SNAPPY",
+                        "PLAINTEXT",
+                        "file5-Data.db"));
         files.add(
                 Paths.get(
                         getPrefix(),

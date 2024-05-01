@@ -84,11 +84,18 @@ public class MetaV2Proxy implements IMetaProxy {
 
     @Override
     public ImmutableList<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange) {
-        String incrementalPrefix = getMatch(dateRange, AbstractBackupPath.BackupFileType.SST_V2);
-        String marker =
-                getMatch(
-                        new DateUtil.DateRange(dateRange.getStartTime(), null),
-                        AbstractBackupPath.BackupFileType.SST_V2);
+        return new ImmutableList.Builder<AbstractBackupPath>()
+                .addAll(getIncrementals(dateRange, AbstractBackupPath.BackupFileType.SST_V2))
+                .addAll(
+                        getIncrementals(
+                                dateRange, AbstractBackupPath.BackupFileType.SECONDARY_INDEX_V2))
+                .build();
+    }
+
+    private ImmutableList<AbstractBackupPath> getIncrementals(
+            DateUtil.DateRange dateRange, AbstractBackupPath.BackupFileType type) {
+        String incrementalPrefix = getMatch(dateRange, type);
+        String marker = getMatch(new DateUtil.DateRange(dateRange.getStartTime(), null), type);
         logger.info(
                 "Listing filesystem with prefix: {}, marker: {}, daterange: {}",
                 incrementalPrefix,
