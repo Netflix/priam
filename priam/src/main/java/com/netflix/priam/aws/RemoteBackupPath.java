@@ -26,7 +26,6 @@ import com.netflix.priam.identity.InstanceIdentity;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Date;
 import java.util.List;
 import javax.inject.Inject;
 
@@ -147,14 +146,6 @@ public class RemoteBackupPath extends AbstractBackupPath {
         region = remotePath.getName(1).toString();
         clusterName = remotePath.getName(2).toString();
         token = remotePath.getName(3).toString();
-    }
-
-    @Override
-    public String remotePrefix(Date start, Date end, String location) {
-        return PATH_JOINER.join(
-                clusterPrefix(location),
-                instanceIdentity.getInstance().getToken(),
-                match(start, end));
     }
 
     @Override
