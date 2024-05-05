@@ -47,7 +47,6 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
             ImmutableMap.of(BackupFolder.BACKUPS, 3, BackupFolder.SNAPSHOTS, 4);
 
     public enum BackupFileType {
-        CL,
         META_V2,
         SECONDARY_INDEX_V2,
         SNAPSHOT_VERIFIED,
@@ -147,15 +146,13 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
     /** Local restore file */
     public File newRestoreFile() {
         File return_;
-        String dataDir = config.getDataFileLocation();
+        String dataDir = config.getRestoreDataLocation();
         switch (type) {
-            case CL:
-                return_ = new File(PATH_JOINER.join(config.getBackupCommitLogLocation(), fileName));
-                break;
             case SECONDARY_INDEX_V2:
-                String restoreFileName =
-                        PATH_JOINER.join(dataDir, keyspace, columnFamily, indexDir, fileName);
-                return_ = new File(restoreFileName);
+                return_ =
+                        new File(
+                                PATH_JOINER.join(
+                                        dataDir, keyspace, columnFamily, indexDir, fileName));
                 break;
             case META_V2:
                 return_ = new File(PATH_JOINER.join(config.getDataFileLocation(), fileName));
@@ -187,11 +184,6 @@ public abstract class AbstractBackupPath implements Comparable<AbstractBackupPat
 
     /** Parses paths with just token prefixes */
     public abstract void parsePartialPrefix(String remoteFilePath);
-
-    /**
-     * Provides a common prefix that matches all objects that fall between the start and end time
-     */
-    public abstract String remotePrefix(Date start, Date end, String location);
 
     public abstract Path remoteV2Prefix(Path location, BackupFileType fileType);
 

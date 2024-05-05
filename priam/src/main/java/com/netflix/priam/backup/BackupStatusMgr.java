@@ -209,18 +209,7 @@ public abstract class BackupStatusMgr implements IBackupStatusMgr {
                 .stream()
                 .filter(Objects::nonNull)
                 .filter(backupMetadata -> backupMetadata.getStatus() == Status.FINISHED)
-                .filter(
-                        backupMetadata ->
-                                backupMetadata
-                                                        .getStart()
-                                                        .toInstant()
-                                                        .compareTo(dateRange.getStartTime())
-                                                >= 0
-                                        && backupMetadata
-                                                        .getStart()
-                                                        .toInstant()
-                                                        .compareTo(dateRange.getEndTime())
-                                                <= 0)
+                .filter(backupMetadata -> dateRange.contains(backupMetadata.getStart().toInstant()))
                 .sorted(Comparator.comparing(BackupMetadata::getStart).reversed())
                 .collect(Collectors.toList());
     }

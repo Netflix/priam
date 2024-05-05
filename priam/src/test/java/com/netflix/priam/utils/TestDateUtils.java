@@ -17,6 +17,7 @@
 
 package com.netflix.priam.utils;
 
+import com.google.common.truth.Truth;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -99,5 +100,35 @@ public class TestDateUtils {
         Assert.assertEquals(Instant.ofEpochSecond(1830340860), dateRange.getStartTime());
         Assert.assertEquals(Instant.ofEpochSecond(1830686460), dateRange.getEndTime());
         Assert.assertEquals("1830", dateRange.match());
+    }
+
+    @Test
+    public void testContainsInstantBeforeStartTime() {
+        DateUtil.DateRange dateRange = new DateUtil.DateRange("202404301200,202405011200");
+        Truth.assertThat(dateRange.contains(Instant.parse("2024-04-29T12:00:00Z"))).isFalse();
+    }
+
+    @Test
+    public void testContainsInstantEqualToStartTime() {
+        DateUtil.DateRange dateRange = new DateUtil.DateRange("202404301200,202405011200");
+        Truth.assertThat(dateRange.contains(Instant.parse("2024-04-30T12:00:00Z"))).isTrue();
+    }
+
+    @Test
+    public void testContainsInstantBetweenStartAndEndTimes() {
+        DateUtil.DateRange dateRange = new DateUtil.DateRange("202404301200,202405011200");
+        Truth.assertThat(dateRange.contains(Instant.parse("2024-05-01T00:00:00Z"))).isTrue();
+    }
+
+    @Test
+    public void testContainsInstantEqualToEndTime() {
+        DateUtil.DateRange dateRange = new DateUtil.DateRange("202404301200,202405011200");
+        Truth.assertThat(dateRange.contains(Instant.parse("2024-05-01T12:00:00Z"))).isTrue();
+    }
+
+    @Test
+    public void testContainsInstantAfterEndTime() {
+        DateUtil.DateRange dateRange = new DateUtil.DateRange("202404301200,202405011200");
+        Truth.assertThat(dateRange.contains(Instant.parse("2024-05-02T12:00:00Z"))).isFalse();
     }
 }
