@@ -1041,13 +1041,6 @@ public interface IConfiguration {
     }
 
     /**
-     * @return true to use private IPs for seeds and insertion into the Token DB false otherwise.
-     */
-    default boolean usePrivateIP() {
-        return getSnitch().equals("org.apache.cassandra.locator.GossipingPropertyFileSnitch");
-    }
-
-    /**
      * @return BackupsToCompress UNCOMPRESSED means compress backups only when the files are not
      *     already compressed by Cassandra
      */

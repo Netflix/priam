@@ -87,7 +87,7 @@ public class DoubleRing {
                     new_slot + hash,
                     InstanceIdentity.DUMMY_INSTANCE_ID,
                     instanceInfo.getHostname(),
-                    config.usePrivateIP() ? instanceInfo.getPrivateIP() : instanceInfo.getHostIP(),
+                    instanceInfo.getPrivateIP(),
                     data.getRac(),
                     null,
                     token);

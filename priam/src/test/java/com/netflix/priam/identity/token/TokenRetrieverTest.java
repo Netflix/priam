@@ -394,7 +394,7 @@ public class TokenRetrieverTest {
     public void testIPIsUpdatedWhenGrabbingPreassignedToken(@Mocked SystemUtils systemUtils)
             throws Exception {
         create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
-        Truth.assertThat(getTokenRetriever().get().getHostIP()).isEqualTo("127.0.0.0");
+        Truth.assertThat(getTokenRetriever().get().getHostIP()).isEqualTo("127.1.1.0");
     }
 
     @Test
