@@ -83,7 +83,14 @@ public class BackupServletV2 {
     @GET
     @Path("/do_snapshot")
     public Response backup() throws Exception {
-        snapshotMetaService.execute();
+        try {
+            snapshotMetaService.execute();
+        } catch (Exception e) {
+            if (e instanceof IllegalStateException) {
+                return Response.status(409).build();
+            }
+            return Response.serverError().build();
+        }
         return Response.ok(REST_SUCCESS, MediaType.APPLICATION_JSON).build();
     }
 

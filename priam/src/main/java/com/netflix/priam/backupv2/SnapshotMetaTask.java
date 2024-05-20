@@ -198,7 +198,7 @@ public class SnapshotMetaTask extends AbstractBackup {
         // as this happens on CRON.
         if (!lock.tryLock()) {
             logger.warn("SnapshotMetaService is already running! Try again later.");
-            throw new Exception("SnapshotMetaService already running");
+            throw new IllegalStateException("SnapshotMetaService already running");
         }
 
         // Save start snapshot status
