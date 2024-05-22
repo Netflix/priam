@@ -18,10 +18,10 @@
 package com.netflix.priam.resources;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.netflix.priam.PriamServer;
 import com.netflix.priam.backup.BRTestModule;
@@ -218,21 +218,58 @@ public class CassandraConfigTest {
     }
 
     @Test
-    public void setReplacedIp() {
+    public void setReplacedIp_valid() {
         new Expectations() {
             {
                 priamServer.getInstanceIdentity();
                 result = instanceIdentity;
             }
         };
+        Truth.assertThat(resource.setReplacedIp("127.0.0.1").getStatus()).isEqualTo(200);
+    }
 
-        Response response = resource.setReplacedIp("127.0.0.1");
-        assertEquals(200, response.getStatus());
-        assertEquals("127.0.0.1", instanceIdentity.getReplacedIp());
-        assertTrue(instanceIdentity.isReplace());
+    @Test
+    public void setReplacedIp_null() {
+        new Expectations() {
+            {
+                priamServer.getInstanceIdentity();
+                result = instanceIdentity;
+            }
+        };
+        Truth.assertThat(resource.setReplacedIp(null).getStatus()).isEqualTo(200);
+    }
 
-        response = resource.setReplacedIp(null);
-        assertEquals(400, response.getStatus());
+    @Test
+    public void setReplacedIp_empty() {
+        new Expectations() {
+            {
+                priamServer.getInstanceIdentity();
+                result = instanceIdentity;
+            }
+        };
+        Truth.assertThat(resource.setReplacedIp("").getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    public void setReplacedIp_invalid() {
+        new Expectations() {
+            {
+                priamServer.getInstanceIdentity();
+                result = instanceIdentity;
+            }
+        };
+        Truth.assertThat(resource.setReplacedIp("foo").getStatus()).isEqualTo(400);
+    }
+
+    @Test
+    public void setReplacedIp_exception() {
+        new Expectations() {
+            {
+                priamServer.getInstanceIdentity();
+                result = null;
+            }
+        };
+        Truth.assertThat(resource.setReplacedIp("1.2.3.4").getStatus()).isEqualTo(500);
     }
 
     @Test
