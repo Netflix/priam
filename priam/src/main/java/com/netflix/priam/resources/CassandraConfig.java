@@ -118,14 +118,16 @@ public class CassandraConfig {
     @POST
     @Path("/set_replaced_ip")
     public Response setReplacedIp(@QueryParam("ip") String ip) {
-        if (StringUtils.isEmpty(ip)) return Response.status(Status.BAD_REQUEST).build();
         try {
             priamServer.getInstanceIdentity().setReplacedIp(ip);
-            return Response.ok().build();
+        } catch (IllegalArgumentException e) {
+            logger.error("A replace IP must be a valid IPv4 address. Pass nothing to unset it.", e);
+            return Response.status(Status.BAD_REQUEST).build();
         } catch (Exception e) {
             logger.error("Error while overriding replacement ip", e);
             return Response.serverError().build();
         }
+        return Response.ok().build();
     }
 
     @GET

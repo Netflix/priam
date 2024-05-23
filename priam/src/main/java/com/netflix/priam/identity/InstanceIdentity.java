@@ -29,6 +29,8 @@ import java.util.LinkedList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.http.conn.util.InetAddressUtils;
 
 /**
  * This class provides the central place to create and consume the identity of the instance - token,
@@ -161,8 +163,15 @@ public class InstanceIdentity {
     }
 
     public void setReplacedIp(String replacedIp) {
-        this.replacedIp = replacedIp;
-        if (!replacedIp.isEmpty()) this.isReplace = true;
+        if (StringUtils.isEmpty(replacedIp)) {
+            this.replacedIp = null;
+        } else if (InetAddressUtils.isIPv4Address(replacedIp)) {
+            this.replacedIp = replacedIp;
+        } else {
+            throw new IllegalArgumentException(
+                    replacedIp + " is neither empty nor a valid IpV4 address");
+        }
+        if (!StringUtils.isEmpty(replacedIp)) this.isReplace = true;
     }
 
     private static boolean isInstanceDummy(PriamInstance instance) {

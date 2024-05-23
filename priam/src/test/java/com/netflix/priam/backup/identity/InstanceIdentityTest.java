@@ -20,10 +20,12 @@ package com.netflix.priam.backup.identity;
 import static org.junit.Assert.*;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.truth.Truth;
 import com.netflix.priam.identity.DoubleRing;
 import com.netflix.priam.identity.InstanceIdentity;
 import com.netflix.priam.identity.PriamInstance;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 public class InstanceIdentityTest extends InstanceTestUtils {
 
@@ -115,5 +117,47 @@ public class InstanceIdentityTest extends InstanceTestUtils {
     public void printInstance(PriamInstance ins, int hash) {
         System.out.println("ID: " + (ins.getId() - hash));
         System.out.println("PayLoad: " + ins.getToken());
+    }
+
+    @Test
+    public void testSetReplacedIp_null() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp(null);
+        Truth.assertThat(identity.getReplacedIp()).isNull();
+    }
+
+    @Test
+    public void testSetReplacedIp_valid() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp("1.2.3.4");
+        Truth.assertThat(identity.getReplacedIp()).isEqualTo("1.2.3.4");
+    }
+
+    @Test
+    public void testSetReplacedIp_invalid() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        Assertions.assertThrows(
+                IllegalArgumentException.class, () -> identity.setReplacedIp("foo"));
+    }
+
+    @Test
+    public void testSetReplacedIp_empty() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp("");
+        Truth.assertThat(identity.isReplace()).isFalse();
+    }
+
+    @Test
+    public void testIsReplace_nullReplaceIp() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp(null);
+        Truth.assertThat(identity.isReplace()).isFalse();
+    }
+
+    @Test
+    public void testIsReplace_validReplaceIp() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp("1.2.3.4");
+        Truth.assertThat(identity.isReplace()).isTrue();
     }
 }
