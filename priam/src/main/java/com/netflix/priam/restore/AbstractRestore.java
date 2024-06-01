@@ -220,9 +220,11 @@ public abstract class AbstractRestore extends Task implements IRestoreStrategy {
                     BackupRestoreUtil.getMostRecentSnapshotPaths(
                             latestValidMetaFile.get(), metaProxy, pathProvider);
             if (!config.skipIncrementalRestore()) {
-                allFiles.addAll(
-                        BackupRestoreUtil.getIncrementalPaths(
-                                latestValidMetaFile.get(), dateRange, metaProxy));
+                DateUtil.DateRange incrementalDateRange =
+                        new DateUtil.DateRange(
+                                latestValidMetaFile.get().getLastModified(),
+                                dateRange.getEndTime());
+                allFiles.addAll(metaProxy.getIncrementals(incrementalDateRange));
             }
 
             // Download snapshot which is listed in the meta file.

@@ -17,6 +17,7 @@
 
 package com.netflix.priam.backupv2;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.priam.backup.AbstractBackupPath;
 import com.netflix.priam.backup.BackupRestoreException;
 import com.netflix.priam.backup.BackupVerificationResult;
@@ -31,8 +32,6 @@ import java.nio.file.Paths;
 import java.util.*;
 import javax.inject.Inject;
 import javax.inject.Provider;
-import org.apache.commons.collections4.iterators.FilterIterator;
-import org.apache.commons.collections4.iterators.TransformIterator;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
@@ -84,40 +83,34 @@ public class MetaV2Proxy implements IMetaProxy {
     }
 
     @Override
-    public Iterator<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange) {
-        String incrementalPrefix = getMatch(dateRange, AbstractBackupPath.BackupFileType.SST_V2);
-        String marker =
-                getMatch(
-                        new DateUtil.DateRange(dateRange.getStartTime(), null),
-                        AbstractBackupPath.BackupFileType.SST_V2);
+    public ImmutableList<AbstractBackupPath> getIncrementals(DateUtil.DateRange dateRange) {
+        return new ImmutableList.Builder<AbstractBackupPath>()
+                .addAll(getIncrementals(dateRange, AbstractBackupPath.BackupFileType.SST_V2))
+                .addAll(
+                        getIncrementals(
+                                dateRange, AbstractBackupPath.BackupFileType.SECONDARY_INDEX_V2))
+                .build();
+    }
+
+    private ImmutableList<AbstractBackupPath> getIncrementals(
+            DateUtil.DateRange dateRange, AbstractBackupPath.BackupFileType type) {
+        String incrementalPrefix = getMatch(dateRange, type);
+        String marker = getMatch(new DateUtil.DateRange(dateRange.getStartTime(), null), type);
         logger.info(
                 "Listing filesystem with prefix: {}, marker: {}, daterange: {}",
                 incrementalPrefix,
                 marker,
                 dateRange);
         Iterator<String> iterator = fs.listFileSystem(incrementalPrefix, null, marker);
-        Iterator<AbstractBackupPath> transformIterator =
-                new TransformIterator<>(
-                        iterator,
-                        s -> {
-                            AbstractBackupPath path = abstractBackupPathProvider.get();
-                            path.parseRemote(s);
-                            return path;
-                        });
-
-        return new FilterIterator<>(
-                transformIterator,
-                abstractBackupPath ->
-                        (abstractBackupPath.getLastModified().isAfter(dateRange.getStartTime())
-                                        && abstractBackupPath
-                                                .getLastModified()
-                                                .isBefore(dateRange.getEndTime()))
-                                || abstractBackupPath
-                                        .getLastModified()
-                                        .equals(dateRange.getStartTime())
-                                || abstractBackupPath
-                                        .getLastModified()
-                                        .equals(dateRange.getEndTime()));
+        ImmutableList.Builder<AbstractBackupPath> results = ImmutableList.builder();
+        while (iterator.hasNext()) {
+            AbstractBackupPath path = abstractBackupPathProvider.get();
+            path.parseRemote(iterator.next());
+            if (dateRange.contains(path.getLastModified())) {
+                results.add(path);
+            }
+        }
+        return results.build();
     }
 
     @Override
@@ -136,10 +129,7 @@ public class MetaV2Proxy implements IMetaProxy {
             AbstractBackupPath abstractBackupPath = abstractBackupPathProvider.get();
             abstractBackupPath.parseRemote(iterator.next());
             logger.debug("Meta file found: {}", abstractBackupPath);
-            if (abstractBackupPath.getLastModified().toEpochMilli()
-                            >= dateRange.getStartTime().toEpochMilli()
-                    && abstractBackupPath.getLastModified().toEpochMilli()
-                            <= dateRange.getEndTime().toEpochMilli()) {
+            if (dateRange.contains(abstractBackupPath.getLastModified())) {
                 metas.add(abstractBackupPath);
             }
         }
