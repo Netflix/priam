@@ -138,11 +138,14 @@ public class TokenRetriever implements ITokenRetriever {
                 Optional<PriamInstance> candidate =
                         instances
                                 .stream()
-                                .filter(i -> myInstanceInfo.getPrivateIP().equals(i.getHostIP()))
-                                .findFirst();
-                if (!candidate.isPresent()) {
-                    candidate = instances.stream().filter(i -> !isNew(i)).findFirst();
-                }
+                                .filter(i -> !isNew(i))
+                                .reduce(
+                                        (current, next) ->
+                                                myInstanceInfo
+                                                                .getPrivateIP()
+                                                                .equals(next.getHostIP())
+                                                        ? next
+                                                        : current);
                 candidate.ifPresent(i -> replacedIp = getReplacedIpForExistingToken(allIds, i));
                 if (replacedIp == null) {
                     candidate = instances.stream().filter(i -> isNew(i)).findFirst();
