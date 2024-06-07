@@ -136,7 +136,16 @@ public class TokenRetriever implements ITokenRetriever {
                                 .filter(i -> !racInstanceIds.contains(i.getInstanceId()))
                                 .collect(Collectors.toList());
                 Optional<PriamInstance> candidate =
-                        instances.stream().filter(i -> !isNew(i)).findFirst();
+                        instances
+                                .stream()
+                                .filter(i -> !isNew(i))
+                                .reduce(
+                                        (current, next) ->
+                                                myInstanceInfo
+                                                                .getPrivateIP()
+                                                                .equals(next.getHostIP())
+                                                        ? next
+                                                        : current);
                 candidate.ifPresent(i -> replacedIp = getReplacedIpForExistingToken(allIds, i));
                 if (replacedIp == null) {
                     candidate = instances.stream().filter(i -> isNew(i)).findFirst();

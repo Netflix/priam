@@ -170,6 +170,25 @@ public class TokenRetrieverTest {
     }
 
     @Test
+    public void testPrioritizeDeadTokensWithSameIP(@Mocked SystemUtils systemUtils)
+            throws Exception {
+        create(0, "iid_1", "host_0", "127.0.0.1", instanceInfo.getRac(), 0 + "");
+        create(1, "iid_2", "host_1", "127.1.1.0", instanceInfo.getRac(), 1 + "");
+        new Expectations() {
+            {
+                membership.getRacMembership();
+                result = ImmutableSet.of();
+                SystemUtils.getDataFromUrl(anyString);
+                returns(null, null);
+            }
+        };
+        TokenRetriever tokenRetriever = getTokenRetriever();
+        Truth.assertThat(tokenRetriever.grabExistingToken().getHostIP()).isEqualTo("127.1.1.0");
+        Truth.assertThat(tokenRetriever.getReplacedIp().isPresent()).isTrue();
+        Truth.assertThat(tokenRetriever.getReplacedIp().get()).isEqualTo("127.1.1.0");
+    }
+
+    @Test
     public void testPrioritizeDeadTokens(@Mocked SystemUtils systemUtils) throws Exception {
         create(0, "iid_0", "host_0", "127.0.0.0", instanceInfo.getRac(), 0 + "");
         create(1, "new_slot", "host_1", "127.0.0.1", instanceInfo.getRac(), 1 + "");
