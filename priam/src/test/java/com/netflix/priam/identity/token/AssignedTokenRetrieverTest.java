@@ -26,7 +26,7 @@ public class AssignedTokenRetrieverTest {
     public static final String DEAD_APP = "testapp-dead";
 
     @Test
-    public void grabAssignedTokenStartDbInBootstrapModeWhenGossipAgreesCurrentInstanceIsTokenOwner(
+    public void grabAssignedTokenStartDbInReplaceModeWhenGossipAgreesCurrentIPIsOwnerAndNotLive(
             @Mocked IPriamInstanceFactory factory,
             @Mocked IConfiguration config,
             @Mocked IMembership membership,
@@ -59,9 +59,6 @@ public class AssignedTokenRetrieverTest {
                 instanceInfo.getInstanceId();
                 result = liveHosts.get(0).getInstanceId();
 
-                instanceInfo.getHostIP();
-                result = liveHosts.get(0).getHostIP();
-
                 TokenRetrieverUtils.inferTokenOwnerFromGossip(
                         ImmutableSet.copyOf(liveHosts),
                         liveHosts.get(0).getToken(),
@@ -75,7 +72,7 @@ public class AssignedTokenRetrieverTest {
                         factory, membership, config, instanceInfo, sleeper, tokenManager);
         InstanceIdentity instanceIdentity =
                 new InstanceIdentity(factory, membership, config, instanceInfo, tokenRetriever);
-        Truth.assertThat(instanceIdentity.isReplace()).isFalse();
+        Truth.assertThat(instanceIdentity.isReplace()).isTrue();
     }
 
     @Test

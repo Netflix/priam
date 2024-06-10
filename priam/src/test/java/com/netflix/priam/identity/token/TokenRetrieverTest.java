@@ -170,6 +170,25 @@ public class TokenRetrieverTest {
     }
 
     @Test
+    public void testPrioritizeDeadTokensWithSameIP(@Mocked SystemUtils systemUtils)
+            throws Exception {
+        create(0, "iid_1", "host_0", "127.0.0.1", instanceInfo.getRac(), 0 + "");
+        create(1, "iid_2", "host_1", "127.1.1.0", instanceInfo.getRac(), 1 + "");
+        new Expectations() {
+            {
+                membership.getRacMembership();
+                result = ImmutableSet.of();
+                SystemUtils.getDataFromUrl(anyString);
+                returns(null, null);
+            }
+        };
+        TokenRetriever tokenRetriever = getTokenRetriever();
+        Truth.assertThat(tokenRetriever.grabExistingToken().getHostIP()).isEqualTo("127.1.1.0");
+        Truth.assertThat(tokenRetriever.getReplacedIp().isPresent()).isTrue();
+        Truth.assertThat(tokenRetriever.getReplacedIp().get()).isEqualTo("127.1.1.0");
+    }
+
+    @Test
     public void testPrioritizeDeadTokens(@Mocked SystemUtils systemUtils) throws Exception {
         create(0, "iid_0", "host_0", "127.0.0.0", instanceInfo.getRac(), 0 + "");
         create(1, "new_slot", "host_1", "127.0.0.1", instanceInfo.getRac(), 1 + "");
@@ -296,8 +315,8 @@ public class TokenRetrieverTest {
     }
 
     @Test
-    public void testPreassignedTokenNotReplacedIfPublicIPMatch(@Mocked SystemUtils systemUtils)
-            throws Exception {
+    public void testPreassignedTokenNotReplacedIfLiveAndPublicIPMatch(
+            @Mocked SystemUtils systemUtils) throws Exception {
         // IP in DB doesn't matter so we make it different to confirm that
         create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
         getInstances(5);
@@ -315,8 +334,8 @@ public class TokenRetrieverTest {
     }
 
     @Test
-    public void testPreassignedTokenNotReplacedIfPrivateIPMatch(@Mocked SystemUtils systemUtils)
-            throws Exception {
+    public void testPreassignedTokenNotReplacedIfLiveAndPrivateIPMatch(
+            @Mocked SystemUtils systemUtils) throws Exception {
         // IP in DB doesn't matter so we make it different to confirm that
         create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
         getInstances(5);
@@ -326,7 +345,7 @@ public class TokenRetrieverTest {
                         .collect(
                                 Collectors.toMap(
                                         String::valueOf, e -> String.format("127.1.1.%s", e)));
-        ImmutableList<String> myLiveInstances = ImmutableList.copyOf(tokenToEndpointMap.values());
+        ImmutableList<String> myLiveInstances = ImmutableList.copyOf(myTokenToEndpointMap.values());
         String gossipResponse = getStatus(myLiveInstances, myTokenToEndpointMap);
 
         new Expectations() {
@@ -338,6 +357,32 @@ public class TokenRetrieverTest {
         TokenRetriever tokenRetriever = getTokenRetriever();
         tokenRetriever.get();
         Truth.assertThat(tokenRetriever.getReplacedIp().isPresent()).isFalse();
+    }
+
+    @Test
+    public void testPreassignedTokenReplacedIfNotLive(@Mocked SystemUtils systemUtils)
+            throws Exception {
+        // IP in DB doesn't matter so we make it different to confirm that
+        create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
+        getInstances(5);
+        List<String> tokens =
+                IntStream.range(0, 7).boxed().map(String::valueOf).collect(Collectors.toList());
+        Map<String, String> myTokenToEndpointMap =
+                tokens.stream()
+                        .collect(Collectors.toMap(e -> e, e -> String.format("127.1.1.%s", e)));
+        ImmutableList<String> myLiveInstances =
+                ImmutableList.copyOf(tokens.stream().skip(1).collect(Collectors.toList()));
+        String gossipResponse = getStatus(myLiveInstances, myTokenToEndpointMap);
+
+        new Expectations() {
+            {
+                SystemUtils.getDataFromUrl(anyString);
+                returns(gossipResponse, gossipResponse, null, "random_value", gossipResponse);
+            }
+        };
+        TokenRetriever tokenRetriever = getTokenRetriever();
+        tokenRetriever.get();
+        Truth.assertThat(tokenRetriever.getReplacedIp().isPresent()).isTrue();
     }
 
     @Test
