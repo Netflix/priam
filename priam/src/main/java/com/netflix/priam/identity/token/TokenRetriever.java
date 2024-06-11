@@ -225,12 +225,13 @@ public class TokenRetriever implements ITokenRetriever {
                 == TokenRetrieverUtils.InferredTokenOwnership.TokenInformationStatus.GOOD) {
             Preconditions.checkNotNull(inferredTokenOwnership.getTokenInformation());
             String inferredIp = inferredTokenOwnership.getTokenInformation().getIpAddress();
-            if (!inferredIp.equals(myInstanceInfo.getHostIP())
-                    && !inferredIp.equals(myInstanceInfo.getPrivateIP())) {
-                if (inferredTokenOwnership.getTokenInformation().isLive()) {
+            if (inferredTokenOwnership.getTokenInformation().isLive()) {
+                if (!inferredIp.equals(myInstanceInfo.getHostIP())
+                        && !inferredIp.equals(myInstanceInfo.getPrivateIP())) {
                     throw new TokenRetrieverUtils.GossipParseException(
                             "We have been assigned a token that C* thinks is alive. Throwing to buy time in the hopes that Gossip just needs to settle.");
                 }
+            } else {
                 ipToReplace = inferredIp;
                 logger.info(
                         "Priam found that the token is not alive according to Cassandra and we should start Cassandra in replace mode with replace ip: "

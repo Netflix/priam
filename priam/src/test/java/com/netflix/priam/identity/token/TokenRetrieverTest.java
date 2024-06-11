@@ -315,8 +315,8 @@ public class TokenRetrieverTest {
     }
 
     @Test
-    public void testPreassignedTokenNotReplacedIfPublicIPMatch(@Mocked SystemUtils systemUtils)
-            throws Exception {
+    public void testPreassignedTokenNotReplacedIfLiveAndPublicIPMatch(
+            @Mocked SystemUtils systemUtils) throws Exception {
         // IP in DB doesn't matter so we make it different to confirm that
         create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
         getInstances(5);
@@ -334,8 +334,8 @@ public class TokenRetrieverTest {
     }
 
     @Test
-    public void testPreassignedTokenNotReplacedIfPrivateIPMatch(@Mocked SystemUtils systemUtils)
-            throws Exception {
+    public void testPreassignedTokenNotReplacedIfLiveAndPrivateIPMatch(
+            @Mocked SystemUtils systemUtils) throws Exception {
         // IP in DB doesn't matter so we make it different to confirm that
         create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
         getInstances(5);
@@ -345,7 +345,7 @@ public class TokenRetrieverTest {
                         .collect(
                                 Collectors.toMap(
                                         String::valueOf, e -> String.format("127.1.1.%s", e)));
-        ImmutableList<String> myLiveInstances = ImmutableList.copyOf(tokenToEndpointMap.values());
+        ImmutableList<String> myLiveInstances = ImmutableList.copyOf(myTokenToEndpointMap.values());
         String gossipResponse = getStatus(myLiveInstances, myTokenToEndpointMap);
 
         new Expectations() {
@@ -357,6 +357,32 @@ public class TokenRetrieverTest {
         TokenRetriever tokenRetriever = getTokenRetriever();
         tokenRetriever.get();
         Truth.assertThat(tokenRetriever.getReplacedIp().isPresent()).isFalse();
+    }
+
+    @Test
+    public void testPreassignedTokenReplacedIfNotLive(@Mocked SystemUtils systemUtils)
+            throws Exception {
+        // IP in DB doesn't matter so we make it different to confirm that
+        create(0, instanceInfo.getInstanceId(), "host_0", "1.2.3.4", "az1", 0 + "");
+        getInstances(5);
+        List<String> tokens =
+                IntStream.range(0, 7).boxed().map(String::valueOf).collect(Collectors.toList());
+        Map<String, String> myTokenToEndpointMap =
+                tokens.stream()
+                        .collect(Collectors.toMap(e -> e, e -> String.format("127.1.1.%s", e)));
+        ImmutableList<String> myLiveInstances =
+                ImmutableList.copyOf(tokens.stream().skip(1).collect(Collectors.toList()));
+        String gossipResponse = getStatus(myLiveInstances, myTokenToEndpointMap);
+
+        new Expectations() {
+            {
+                SystemUtils.getDataFromUrl(anyString);
+                returns(gossipResponse, gossipResponse, null, "random_value", gossipResponse);
+            }
+        };
+        TokenRetriever tokenRetriever = getTokenRetriever();
+        tokenRetriever.get();
+        Truth.assertThat(tokenRetriever.getReplacedIp().isPresent()).isTrue();
     }
 
     @Test
