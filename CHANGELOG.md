@@ -1,4 +1,11 @@
 # Changelog
+## 2024/06/11 4.1.9
+Set replaceip for all non-live pre-assigned tokens #1099
+Prefer replacing dead nodes with the same IP. #1098
+Restore incremental backups of secondary index sstables. #1093
+Allow operators to remove the replaceip by passing "null" #1097
+Return status code 409 is do_snapshot is already in progress #1096
+
 ## 2024/05/20 4.1.8
 Always use private IPs #1095
 
