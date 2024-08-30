@@ -160,4 +160,20 @@ public class InstanceIdentityTest extends InstanceTestUtils {
         identity.setReplacedIp("1.2.3.4");
         Truth.assertThat(identity.isReplace()).isTrue();
     }
+
+    @Test
+    public void testIsReplace_nullThenValid() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp(null);
+        identity.setReplacedIp("1.2.3.4");
+        Truth.assertThat(identity.isReplace()).isTrue();
+    }
+
+    @Test
+    public void testIsReplace_validThenNull() throws Exception {
+        InstanceIdentity identity = createInstanceIdentity("az1", "fakeinstancex");
+        identity.setReplacedIp("1.2.3.4");
+        identity.setReplacedIp(null);
+        Truth.assertThat(identity.isReplace()).isFalse();
+    }
 }

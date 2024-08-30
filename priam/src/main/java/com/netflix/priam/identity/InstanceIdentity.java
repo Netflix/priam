@@ -171,7 +171,7 @@ public class InstanceIdentity {
             throw new IllegalArgumentException(
                     replacedIp + " is neither empty nor a valid IpV4 address");
         }
-        if (!StringUtils.isEmpty(replacedIp)) this.isReplace = true;
+        this.isReplace = !StringUtils.isEmpty(replacedIp);
     }
 
     private static boolean isInstanceDummy(PriamInstance instance) {
