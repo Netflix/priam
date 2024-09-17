@@ -25,7 +25,6 @@ import com.netflix.priam.backupv2.BackupV2Service;
 import com.netflix.priam.backupv2.IMetaProxy;
 import com.netflix.priam.backupv2.SnapshotMetaTask;
 import com.netflix.priam.config.IConfiguration;
-import com.netflix.priam.merics.BackupMetrics;
 import com.netflix.priam.notification.BackupNotificationMgr;
 import com.netflix.priam.utils.DateUtil;
 import com.netflix.priam.utils.DateUtil.DateRange;
@@ -62,7 +61,6 @@ public class BackupServletV2 {
     private final BackupNotificationMgr backupNotificationMgr;
     private final PriamServer priamServer;
 
-    private final BackupMetrics backupMetrics;
     private static final String REST_SUCCESS = "[\"ok\"]";
 
     @Inject
@@ -77,8 +75,7 @@ public class BackupServletV2 {
             Provider<AbstractBackupPath> pathProvider,
             BackupV2Service backupService,
             BackupNotificationMgr backupNotificationMgr,
-            PriamServer priamServer,
-            BackupMetrics backupMetrics) {
+            PriamServer priamServer) {
         this.backupStatusMgr = backupStatusMgr;
         this.backupVerification = backupVerification;
         this.snapshotMetaService = snapshotMetaService;
@@ -89,7 +86,6 @@ public class BackupServletV2 {
         this.backupService = backupService;
         this.backupNotificationMgr = backupNotificationMgr;
         this.priamServer = priamServer;
-        this.backupMetrics = backupMetrics;
     }
 
     @GET

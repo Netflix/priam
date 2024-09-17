@@ -20,7 +20,8 @@ import org.junit.Test;
 public class TestBackupDynamicRateLimiter {
     private static final Instant NOW = Instant.ofEpochMilli(1 << 16);
     private static final Instant LATER = NOW.plusMillis(Duration.ofHours(1).toMillis());
-    private static final int DIR_SIZE = 1 << 16;
+    private static final int DIR_SIZE_BYTES = 1 << 16;
+    private static final int DIR_SIZE_FILES = 10;
 
     private BackupDynamicRateLimiter rateLimiter;
     private FakeConfiguration config;
@@ -34,7 +35,7 @@ public class TestBackupDynamicRateLimiter {
 
     @Test
     public void sunnyDay() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         Stopwatch timer = timePermitAcquisition(getBackupPath(), LATER, 21);
         Truth.assertThat(timer.elapsed(TimeUnit.MILLISECONDS)).isAtLeast(1_000);
         Truth.assertThat(timer.elapsed(TimeUnit.MILLISECONDS)).isAtMost(2_000);
@@ -42,14 +43,14 @@ public class TestBackupDynamicRateLimiter {
 
     @Test
     public void targetSetToEpoch() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         Stopwatch timer = timePermitAcquisition(getBackupPath(), Instant.EPOCH, 20);
         assertNoRateLimiting(timer);
     }
 
     @Test
     public void pathIsNotASnapshot() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         AbstractBackupPath path =
                 getBackupPath(
                         "target/data/Keyspace1/Standard1/backups/Keyspace1-Standard1-ia-4-Data.db");
@@ -59,14 +60,14 @@ public class TestBackupDynamicRateLimiter {
 
     @Test
     public void targetIsNow() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         Stopwatch timer = timePermitAcquisition(getBackupPath(), NOW, 20);
         assertNoRateLimiting(timer);
     }
 
     @Test
     public void targetIsInThePast() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         Instant target = NOW.minus(Duration.ofHours(1L));
         Stopwatch timer = timePermitAcquisition(getBackupPath(), target, 20);
         assertNoRateLimiting(timer);
@@ -74,32 +75,32 @@ public class TestBackupDynamicRateLimiter {
 
     @Test
     public void noBackupThreads() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 0), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 0), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         assertIllegalState(() -> timePermitAcquisition(getBackupPath(), LATER, 20));
     }
 
     @Test
     public void negativeBackupThreads() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", -1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", -1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         assertIllegalState(() -> timePermitAcquisition(getBackupPath(), LATER, 20));
     }
 
     @Test
     public void noData() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, 0);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, 0, 0);
         Stopwatch timer = timePermitAcquisition(getBackupPath(), LATER, 20);
         assertNoRateLimiting(timer);
     }
 
     @Test
     public void noPermitsRequested() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         assertIllegalArgument(() -> timePermitAcquisition(getBackupPath(), LATER, 0));
     }
 
     @Test
     public void negativePermitsRequested() {
-        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE);
+        rateLimiter = getRateLimiter(ImmutableMap.of("Priam.backup.threads", 1), NOW, DIR_SIZE_BYTES, DIR_SIZE_FILES);
         assertIllegalArgument(() -> timePermitAcquisition(getBackupPath(), LATER, -1));
     }
 
@@ -123,12 +124,12 @@ public class TestBackupDynamicRateLimiter {
     }
 
     private BackupDynamicRateLimiter getRateLimiter(
-            Map<String, Object> properties, Instant now, long directorySize) {
+            Map<String, Object> properties, Instant now, long directorySizeBytes, int directorySizeFiles) {
         properties.forEach(config::setFakeConfig);
         return new BackupDynamicRateLimiter(
                 config,
                 Clock.fixed(now, ZoneId.systemDefault()),
-                new FakeDirectorySize(directorySize));
+                new FakeDirectorySize(directorySizeBytes, directorySizeFiles));
     }
 
     private void assertNoRateLimiting(Stopwatch timer) {
@@ -155,14 +156,21 @@ public class TestBackupDynamicRateLimiter {
 
     private static final class FakeDirectorySize implements DirectorySize {
         private final long size;
+        private final int fileCount;
 
-        FakeDirectorySize(long size) {
+        FakeDirectorySize(long size, int fileCount) {
             this.size = size;
+            this.fileCount = fileCount;
         }
 
         @Override
         public long getBytes(String location) {
             return size;
+        }
+
+        @Override
+        public int getFiles(String location) {
+            return fileCount;
         }
     }
 }

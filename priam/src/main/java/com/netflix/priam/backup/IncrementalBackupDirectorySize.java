@@ -5,7 +5,7 @@ import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 
 /** Estimates remaining bytes or files to upload in a backup by looking at the file system */
-public class SnapshotDirectorySize implements DirectorySize {
+public class IncrementalBackupDirectorySize implements DirectorySize {
 
     public long getBytes(String location) {
         SummingFileVisitor fileVisitor = new SummingFileVisitor();
@@ -38,7 +38,7 @@ public class SnapshotDirectorySize implements DirectorySize {
 
         @Override
         public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) {
-            if (file.toString().contains(AbstractBackup.SNAPSHOT_FOLDER) && attrs.isRegularFile()) {
+            if (file.toString().contains(AbstractBackup.INCREMENTAL_BACKUP_FOLDER) && attrs.isRegularFile()) {
                 totalBytes += attrs.size();
                 totalFiles += 1;
             }

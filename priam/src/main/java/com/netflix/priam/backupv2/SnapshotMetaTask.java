@@ -443,26 +443,4 @@ public class SnapshotMetaTask extends AbstractBackup {
                 };
         Futures.addCallback(future, callback, MoreExecutors.directExecutor());
     }
-
-    public int countFilesInSnapshotDir(IConfiguration config) throws Exception {
-        int totalFileCount = 0;
-        Set<Path> snapshotDirectories =
-                AbstractBackup.getBackupDirectories(config, SNAPSHOT_FOLDER);
-        for (Path snapshotDir : snapshotDirectories) {
-            try (DirectoryStream<Path> directoryStream =
-                    Files.newDirectoryStream(snapshotDir, Files::isDirectory)) {
-                for (Path backupDir : directoryStream) {
-                    if (backupDir.toFile().getName().startsWith(SNAPSHOT_PREFIX)) {
-                        try (Stream<Path> stream = Files.list(backupDir)) {
-                            totalFileCount += stream.filter(Files::isRegularFile).count();
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                logger.error("Failed to get files in snapshot directory. {}", e.getMessage());
-                e.printStackTrace();
-            }
-        }
-        return totalFileCount;
-    }
 }

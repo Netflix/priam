@@ -140,19 +140,4 @@ public class IncrementalBackup extends AbstractBackup {
         if (FileUtils.sizeOfDirectory(dir) == 0) FileUtils.deleteQuietly(dir);
         return null;
     }
-
-    public static int countFilesInBackupDir(IConfiguration config) throws Exception {
-        int totalFileCount = 0;
-        Set<Path> backupDirectories =
-                AbstractBackup.getBackupDirectories(config, INCREMENTAL_BACKUP_FOLDER);
-        for (Path backupDir : backupDirectories) {
-            try (Stream<Path> stream = Files.list(backupDir)) {
-                totalFileCount += stream.filter(Files::isRegularFile).count();
-            } catch (Exception e) {
-                logger.error("Failed to get files in backups directory. {}", e.getMessage());
-                e.printStackTrace();
-            }
-        }
-        return totalFileCount;
-    }
 }
