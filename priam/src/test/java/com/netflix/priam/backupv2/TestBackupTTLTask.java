@@ -17,12 +17,15 @@
 
 package com.netflix.priam.backupv2;
 
+import com.google.common.collect.ImmutableList;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.netflix.priam.backup.AbstractBackupPath;
 import com.netflix.priam.backup.BRTestModule;
 import com.netflix.priam.backup.FakeBackupFileSystem;
 import com.netflix.priam.backup.Status;
+import com.netflix.priam.config.BackupsToCompress;
+import com.netflix.priam.config.FakeConfiguration;
 import com.netflix.priam.config.IConfiguration;
 import com.netflix.priam.health.InstanceState;
 import com.netflix.priam.utils.BackupFileUtils;
@@ -105,7 +108,6 @@ public class TestBackupTTLTask {
                 testBackupUtils.createFile("mc-7-Data.db", time.plus(20, ChronoUnit.MINUTES));
         list.clear();
         list.add(getRemoteFromLocal(file4));
-        // list.add(getRemoteFromLocal(file6));
         list.add(getRemoteFromLocal(file7));
         metas[2] = testBackupUtils.createMeta(list, time.plus(40, ChronoUnit.MINUTES));
         allFiles.add(getRemoteFromLocal(file5));
@@ -205,5 +207,27 @@ public class TestBackupTTLTask {
             }
         };
         backupTTLService.execute();
+    }
+
+    @Test
+    public void testFileIsNotDeletedIfOnlyCompressionIsDifferent() throws Exception {
+        BackupFileUtils.cleanupDir(Paths.get(configuration.getDataFileLocation()));
+        int lookback =
+            configuration.getBackupRetentionDays() + configuration.getGracePeriodDaysForCompaction() + 1;
+        Instant time = DateUtil.getInstant().minus(lookback, ChronoUnit.DAYS);
+        String file = testBackupUtils.createFile("mc-1-Data.db", time);
+        time =
+            time.plus(configuration.getGracePeriodDaysForCompaction() + 1, ChronoUnit.DAYS)
+                .plus(20, ChronoUnit.MINUTES);
+        Path metapath = testBackupUtils.createMeta(ImmutableList.of(getRemoteFromLocal(file)), time);
+        AbstractBackupPath meta = pathProvider.get();
+        meta.parseLocal(metapath.toFile(), AbstractBackupPath.BackupFileType.META_V2);
+        ((FakeConfiguration) configuration).setBackupsToCompress(BackupsToCompress.NONE);
+        String data = getRemoteFromLocal(file);
+        backupFileSystem.setupTest(ImmutableList.of(data, meta.getRemotePath()));
+
+        backupTTLService.execute();
+
+        Assert.assertTrue(getAllFiles().contains(data));
     }
 }

@@ -18,6 +18,7 @@
 package com.netflix.priam.backupv2;
 
 import com.netflix.priam.backup.*;
+import com.netflix.priam.compress.CompressionType;
 import com.netflix.priam.config.IBackupRestoreConfig;
 import com.netflix.priam.config.IConfiguration;
 import com.netflix.priam.health.InstanceState;
@@ -199,7 +200,7 @@ public class BackupTTLTask extends Task {
                     break;
                 }
 
-                if (!filesInMeta.containsKey(backupPath.getRemotePath())) {
+                if (!filesInMeta.containsKey(removeCompressionPart(backupPath.getRemotePath()))) {
                     deleteFile(backupPath, false);
                 } else {
                     if (logger.isDebugEnabled())
@@ -262,9 +263,16 @@ public class BackupTTLTask extends Task {
         public void process(ColumnFamilyResult columnfamilyResult) {
             for (ColumnFamilyResult.SSTableResult sstable : columnfamilyResult.getSstables()) {
                 for (FileUploadResult component : sstable.getSstableComponents()) {
-                    filesInMeta.put(component.getBackupPath(), null);
+                    filesInMeta.put(removeCompressionPart(component.getBackupPath()), null);
                 }
             }
         }
+    }
+
+    private String removeCompressionPart(String backupPath) {
+        for (CompressionType compressionType : CompressionType.values()) {
+            backupPath = backupPath.replace("/" + compressionType.name() + "/", "/");
+        }
+        return backupPath;
     }
 }

@@ -234,6 +234,11 @@ public class FakeConfiguration implements IConfiguration {
         this.mayCreateNewToken = mayCreateNewToken;
     }
 
+    public FakeConfiguration setBackupsToCompress(BackupsToCompress backupsToCompress) {
+        setFakeConfig("Priam.backupsToCompress", backupsToCompress);
+        return this;
+    }
+
     public BackupsToCompress getBackupsToCompress() {
         return (BackupsToCompress)
                 fakeConfig.getOrDefault("Priam.backupsToCompress", BackupsToCompress.ALL);
