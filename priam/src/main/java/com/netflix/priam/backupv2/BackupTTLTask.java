@@ -260,18 +260,11 @@ public class BackupTTLTask extends Task {
     private class MetaFileWalker extends MetaFileReader {
         @Override
         public void process(ColumnFamilyResult columnfamilyResult) {
-            columnfamilyResult
-                    .getSstables()
-                    .forEach(
-                            ssTableResult ->
-                                    ssTableResult
-                                            .getSstableComponents()
-                                            .forEach(
-                                                    fileUploadResult ->
-                                                            filesInMeta.put(
-                                                                    fileUploadResult
-                                                                            .getBackupPath(),
-                                                                    null)));
+            for (ColumnFamilyResult.SSTableResult sstable : columnfamilyResult.getSstables()) {
+                for (FileUploadResult component : sstable.getSstableComponents()) {
+                    filesInMeta.put(component.getBackupPath(), null);
+                }
+            }
         }
     }
 }
