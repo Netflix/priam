@@ -1104,7 +1104,7 @@ public interface IConfiguration {
      * @return the milliseconds since the epoch of the transition time.
      */
     default long getCompressionTransitionEpochMillis() {
-        return 0L;
+        return Long.MAX_VALUE;
     }
 
     /** @return whether to enable auto_snapshot */
