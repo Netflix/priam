@@ -188,24 +188,24 @@ public class BackupTTLTask extends Task {
                     config.getGracePeriodDaysForCompaction());
 
             while (remoteFileLocations.hasNext()) {
-                AbstractBackupPath abstractBackupPath = abstractBackupPathProvider.get();
-                abstractBackupPath.parseRemote(remoteFileLocations.next());
+                AbstractBackupPath backupPath = abstractBackupPathProvider.get();
+                backupPath.parseRemote(remoteFileLocations.next());
                 // If lastModifiedTime is after the dateToTTL, we should get out of this loop as
                 // remote file systems always give locations which are sorted.
-                if (abstractBackupPath.getLastModified().isAfter(dateToTtl)) {
+                if (backupPath.getLastModified().isAfter(dateToTtl)) {
                     logger.info(
                             "Breaking from TTL. Got a key which is after the TTL time: {}",
-                            abstractBackupPath.getRemotePath());
+                            backupPath.getRemotePath());
                     break;
                 }
 
-                if (!filesInMeta.containsKey(abstractBackupPath.getRemotePath())) {
-                    deleteFile(abstractBackupPath, false);
+                if (!filesInMeta.containsKey(backupPath.getRemotePath())) {
+                    deleteFile(backupPath, false);
                 } else {
                     if (logger.isDebugEnabled())
                         logger.debug(
                                 "Not deleting this key as it is referenced in backups: {}",
-                                abstractBackupPath.getRemotePath());
+                                backupPath.getRemotePath());
                 }
             }
 
