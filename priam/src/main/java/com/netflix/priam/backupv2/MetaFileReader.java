@@ -17,6 +17,7 @@
 package com.netflix.priam.backupv2;
 
 import com.google.gson.stream.JsonReader;
+import com.netflix.priam.backup.BackupRestoreException;
 import com.netflix.priam.utils.DateUtil;
 import com.netflix.priam.utils.GsonJsonSerializer;
 import java.io.FileNotFoundException;

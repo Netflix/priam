@@ -18,12 +18,10 @@
 package com.netflix.priam.backupv2;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.truth.Truth;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.netflix.priam.backup.AbstractBackupPath;
-import com.netflix.priam.backup.BRTestModule;
-import com.netflix.priam.backup.FakeBackupFileSystem;
-import com.netflix.priam.backup.Status;
+import com.netflix.priam.backup.*;
 import com.netflix.priam.config.BackupsToCompress;
 import com.netflix.priam.config.FakeConfiguration;
 import com.netflix.priam.config.IConfiguration;
@@ -46,6 +44,7 @@ import mockit.Mocked;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
 
 /** Created by aagrawal on 12/17/18. */
 public class TestBackupTTLTask {
@@ -229,5 +228,101 @@ public class TestBackupTTLTask {
         backupTTLService.execute();
 
         Assert.assertTrue(getAllFiles().contains(data));
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_NONE() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/table-9f5c6374d48532299a0a5094af9ad1e3/NONE/PLAINTEXT/nb-10-big-Statistics.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/table-9f5c6374d48532299a0a5094af9ad1e3/PLAINTEXT/nb-10-big-Statistics.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_SNAPPY() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/table-9f5c6374d48532299a0a5094af9ad1e3/SNAPPY/PLAINTEXT/nb-10-big-Statistics.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/table-9f5c6374d48532299a0a5094af9ad1e3/PLAINTEXT/nb-10-big-Statistics.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_unsupportedCompression() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/table-9f5c6374d48532299a0a5094af9ad1e3/LZ4/PLAINTEXT/nb-10-big-Statistics.db"));
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_SNAPPYInKeyspace() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/SNAPPY/table-9f5c6374d48532299a0a5094af9ad1e3/SNAPPY/PLAINTEXT/nb-10-big-Statistics.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/SNAPPY/table-9f5c6374d48532299a0a5094af9ad1e3/PLAINTEXT/nb-10-big-Statistics.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_NONEInKeyspace() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/NONE/table-9f5c6374d48532299a0a5094af9ad1e3/NONE/PLAINTEXT/nb-10-big-Statistics.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/NONE/table-9f5c6374d48532299a0a5094af9ad1e3/PLAINTEXT/nb-10-big-Statistics.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_SNAPPYInTable() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/SNAPPY-9f5c6374d48532299a0a5094af9ad1e3/SNAPPY/PLAINTEXT/nb-10-big-Statistics.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/SNAPPY-9f5c6374d48532299a0a5094af9ad1e3/PLAINTEXT/nb-10-big-Statistics.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_sst_NONEInTable() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/NONE-9f5c6374d48532299a0a5094af9ad1e3/NONE/PLAINTEXT/nb-10-big-Statistics.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SST_V2/1724992379000/keyspace/NONE-9f5c6374d48532299a0a5094af9ad1e3/PLAINTEXT/nb-10-big-Statistics.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_NONE() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/NONE/PLAINTEXT/keyspace-table.table_field_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/PLAINTEXT/keyspace-table.table_field_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_SNAPPY() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/SNAPPY/PLAINTEXT/keyspace-table.table_field_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/PLAINTEXT/keyspace-table.table_field_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_unsupportedCompression() {
+        Assertions.assertThrows(
+            IllegalArgumentException.class,
+            () -> BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/LZ4/PLAINTEXT/keyspace-table.table_field_idx-ka-1-CRC.db"));
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_SNAPPYInKeyspace() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/SNAPPY/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/SNAPPY/PLAINTEXT/SNAPPY-table.table_field_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/SNAPPY/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/PLAINTEXT/SNAPPY-table.table_field_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_NONEInKeyspace() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/NONE/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/NONE/PLAINTEXT/NONE-table.table_field_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/NONE/table-672cc1f038a311e68d78cd36d8a9052a/.table_field_idx/PLAINTEXT/NONE-table.table_field_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_SNAPPYInTable() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/SNAPPY-672cc1f038a311e68d78cd36d8a9052a/.SNAPPY_field_idx/SNAPPY/PLAINTEXT/keyspace-SNAPPY.SNAPPY_field_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/SNAPPY-672cc1f038a311e68d78cd36d8a9052a/.SNAPPY_field_idx/PLAINTEXT/keyspace-SNAPPY.SNAPPY_field_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_NONEInTable() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/NONE-672cc1f038a311e68d78cd36d8a9052a/.NONE_field_idx/NONE/PLAINTEXT/keyspace-NONE.NONE_field_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/NONE-672cc1f038a311e68d78cd36d8a9052a/.NONE_field_idx/PLAINTEXT/keyspace-NONE.NONE_field_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_SNAPPYInIndex() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_SNAPPY_idx/SNAPPY/PLAINTEXT/keyspace-table.table_SNAPPY_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_SNAPPY_idx/PLAINTEXT/keyspace-table.table_SNAPPY_idx-ka-1-CRC.db");
+    }
+
+    @Test
+    public void testRemoveCompressionPart_si_NONEInIndex() {
+        Truth.assertThat(BackupTTLTask.removeCompressionPart("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_NONE_idx/NONE/PLAINTEXT/keyspace-table.table_NONE_idx-ka-1-CRC.db"))
+            .isEqualTo("test_backup/1234_cass_foo/-4419532432517671141/SECONDARY_INDEX_V2/1724992379000/keyspace/table-672cc1f038a311e68d78cd36d8a9052a/.table_NONE_idx/PLAINTEXT/keyspace-table.table_NONE_idx-ka-1-CRC.db");
     }
 }
