@@ -17,7 +17,15 @@
 
 package com.netflix.priam.backupv2;
 
-import com.netflix.priam.backup.*;
+import com.google.api.client.util.Lists;
+import com.google.common.base.Joiner;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Splitter;
+import com.netflix.priam.backup.AbstractBackupPath;
+import com.netflix.priam.backup.BackupRestoreException;
+import com.netflix.priam.backup.IBackupFileSystem;
+import com.netflix.priam.backup.Status;
+import com.netflix.priam.compress.CompressionType;
 import com.netflix.priam.config.IBackupRestoreConfig;
 import com.netflix.priam.config.IConfiguration;
 import com.netflix.priam.health.InstanceState;
@@ -26,6 +34,15 @@ import com.netflix.priam.scheduler.SimpleTimer;
 import com.netflix.priam.scheduler.Task;
 import com.netflix.priam.scheduler.TaskTimer;
 import com.netflix.priam.utils.DateUtil;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.math.Fraction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -34,14 +51,6 @@ import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.lang3.math.Fraction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * This class is used to TTL or delete the SSTable components from the backups after they are not
@@ -69,6 +78,9 @@ public class BackupTTLTask extends Task {
     private final int BATCH_SIZE = 1000;
     private final Instant start_of_feature = DateUtil.parseInstant("201801010000");
     private final int maxWaitMillis;
+    private static final int BACKUP_TYPE_INDEX = 3;
+    private static final Splitter PATH_SPLITTER = Splitter.on('/');
+    private static final Joiner PATH_JOINER = Joiner.on('/');
 
     @Inject
     public BackupTTLTask(
@@ -188,24 +200,24 @@ public class BackupTTLTask extends Task {
                     config.getGracePeriodDaysForCompaction());
 
             while (remoteFileLocations.hasNext()) {
-                AbstractBackupPath abstractBackupPath = abstractBackupPathProvider.get();
-                abstractBackupPath.parseRemote(remoteFileLocations.next());
+                AbstractBackupPath backupPath = abstractBackupPathProvider.get();
+                backupPath.parseRemote(remoteFileLocations.next());
                 // If lastModifiedTime is after the dateToTTL, we should get out of this loop as
                 // remote file systems always give locations which are sorted.
-                if (abstractBackupPath.getLastModified().isAfter(dateToTtl)) {
+                if (backupPath.getLastModified().isAfter(dateToTtl)) {
                     logger.info(
                             "Breaking from TTL. Got a key which is after the TTL time: {}",
-                            abstractBackupPath.getRemotePath());
+                            backupPath.getRemotePath());
                     break;
                 }
 
-                if (!filesInMeta.containsKey(abstractBackupPath.getRemotePath())) {
-                    deleteFile(abstractBackupPath, false);
+                if (!filesInMeta.containsKey(removeCompressionPart(backupPath.getRemotePath()))) {
+                    deleteFile(backupPath, false);
                 } else {
                     if (logger.isDebugEnabled())
                         logger.debug(
                                 "Not deleting this key as it is referenced in backups: {}",
-                                abstractBackupPath.getRemotePath());
+                                backupPath.getRemotePath());
                 }
             }
 
@@ -260,18 +272,32 @@ public class BackupTTLTask extends Task {
     private class MetaFileWalker extends MetaFileReader {
         @Override
         public void process(ColumnFamilyResult columnfamilyResult) {
-            columnfamilyResult
-                    .getSstables()
-                    .forEach(
-                            ssTableResult ->
-                                    ssTableResult
-                                            .getSstableComponents()
-                                            .forEach(
-                                                    fileUploadResult ->
-                                                            filesInMeta.put(
-                                                                    fileUploadResult
-                                                                            .getBackupPath(),
-                                                                    null)));
+            for (ColumnFamilyResult.SSTableResult sstable : columnfamilyResult.getSstables()) {
+                for (FileUploadResult component : sstable.getSstableComponents()) {
+                    filesInMeta.put(removeCompressionPart(component.getBackupPath()), null);
+                }
+            }
         }
+    }
+
+    static String removeCompressionPart(String backupPath) {
+        List<String> parts = Lists.newArrayList(PATH_SPLITTER.split(backupPath));
+        AbstractBackupPath.BackupFileType fileType =
+            AbstractBackupPath.BackupFileType.valueOf(parts.get(BACKUP_TYPE_INDEX));
+        String compressionType;
+        if (fileType == AbstractBackupPath.BackupFileType.SST_V2) {
+            compressionType = parts.remove(7);
+        } else if (fileType == AbstractBackupPath.BackupFileType.SECONDARY_INDEX_V2) {
+            compressionType = parts.remove(8);
+        } else {
+            throw new IllegalStateException(
+                String.format("only %s, and %s, are supported, saw %s",
+                    AbstractBackupPath.BackupFileType.SST_V2.name(),
+                    AbstractBackupPath.BackupFileType.SECONDARY_INDEX_V2.name(),
+                    fileType));
+        }
+        // check compressionType validity
+        CompressionType.valueOf(compressionType);
+        return PATH_JOINER.join(parts);
     }
 }

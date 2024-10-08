@@ -162,9 +162,9 @@ public class BackupNotificationMgr {
                 for (String s : this.notifiedBackupFileTypes.split(",")) {
                     try {
                         AbstractBackupPath.BackupFileType backupFileType =
-                                AbstractBackupPath.BackupFileType.fromString(s.trim());
+                                AbstractBackupPath.BackupFileType.valueOf(s.trim());
                         notifiedBackupFileTypesSet.add(backupFileType);
-                    } catch (BackupRestoreException ignored) {
+                    } catch (IllegalArgumentException ignored) {
                     }
                 }
             }
