@@ -1,4 +1,8 @@
 # Changelog
+## 2024/09/08 4.1.10
+Do not delete backups if only the compression type differs. #1103
+Always set isReplace when the replace ip is set. #1102
+
 ## 2024/06/11 4.1.9
 Set replaceip for all non-live pre-assigned tokens #1099
 Prefer replacing dead nodes with the same IP. #1098
