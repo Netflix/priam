@@ -1138,4 +1138,8 @@ public interface IConfiguration {
     default boolean skipMetaFileValidationOnRestore() {
         return false;
     }
+
+    default String getCassandraJavaHome() {
+        return "/apps/java";
+    }
 }

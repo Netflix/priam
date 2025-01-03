@@ -60,6 +60,7 @@ public class CassandraProcessManager implements ICassandraProcess {
         env.put("CASS_LOGS_DIR", config.getLogDirLocation());
         env.put("CASSANDRA_LOG_DIR", config.getLogDirLocation());
         env.put("CASSANDRA_HOME", config.getCassHome());
+        env.put("JAVA_HOME", config.getCassandraJavaHome());
     }
 
     public void start(boolean join_ring) throws IOException {

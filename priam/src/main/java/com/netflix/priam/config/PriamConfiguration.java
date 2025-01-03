@@ -741,4 +741,9 @@ public class PriamConfiguration implements IConfiguration {
     public boolean getAutoSnapshot() {
         return config.get(PRIAM_PRE + ".autoSnapshot", false);
     }
+
+    @Override
+    public String getCassandraJavaHome() {
+        return config.get(PRIAM_PRE + ".cassandraJavaHome", "/apps/java");
+    }
 }
