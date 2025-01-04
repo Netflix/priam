@@ -76,7 +76,7 @@ public class SnapshotMetaTask extends AbstractBackup {
     public static final String JOBNAME = "SnapshotMetaService";
 
     private static final Logger logger = LoggerFactory.getLogger(SnapshotMetaTask.class);
-    private static final String SNAPSHOT_PREFIX = "snap_v2_";
+    public static final String SNAPSHOT_PREFIX = "snap_v2_";
     private static final String CASSANDRA_MANIFEST_FILE = "manifest.json";
     private static final String CASSANDRA_SCHEMA_FILE = "schema.cql";
     private static final TimeZone UTC = TimeZone.getTimeZone(ZoneId.of("UTC"));

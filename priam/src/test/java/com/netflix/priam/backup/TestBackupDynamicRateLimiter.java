@@ -164,12 +164,12 @@ public class TestBackupDynamicRateLimiter {
         }
 
         @Override
-        public long getBytes(String location) {
+        public long getBytes(String location, String... filters) {
             return size;
         }
 
         @Override
-        public int getFiles(String location) {
+        public int getFiles(String location, String... filters) {
             return fileCount;
         }
     }

@@ -38,7 +38,8 @@ public class BackupDynamicRateLimiter implements DynamicRateLimiter {
         }
         int backupThreads = config.getBackupThreads();
         Preconditions.checkState(backupThreads > 0);
-        long bytesPerThread = this.dirSize.getBytes(config.getDataFileLocation()) / backupThreads;
+        long bytesPerThread =
+                this.dirSize.getBytes(config.getDataFileLocation(), AbstractBackup.SNAPSHOT_FOLDER) / backupThreads;
         if (bytesPerThread < 1) {
             return;
         }
