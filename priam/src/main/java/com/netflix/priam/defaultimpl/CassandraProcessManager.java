@@ -60,6 +60,7 @@ public class CassandraProcessManager implements ICassandraProcess {
         env.put("CASS_LOGS_DIR", config.getLogDirLocation());
         env.put("CASSANDRA_LOG_DIR", config.getLogDirLocation());
         env.put("CASSANDRA_HOME", config.getCassHome());
+        logger.info("@@@ using " + config.getCassandraJavaHome() + " for JAVA_HOME");
         env.put("JAVA_HOME", config.getCassandraJavaHome());
     }
 
@@ -83,6 +84,7 @@ public class CassandraProcessManager implements ICassandraProcess {
 
         Map<String, String> env = startCass.environment();
         setEnv(env);
+        logger.info("@@@ JAVA_HOME set to: " + startCass.environment().get("JAVA_HOME"));
         env.put("cassandra.join_ring", join_ring ? "true" : "false");
 
         startCass.directory(new File("/"));
