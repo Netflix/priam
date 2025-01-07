@@ -17,7 +17,6 @@
 
 package com.netflix.priam.backupv2;
 
-import com.netflix.priam.backup.DirectorySize;
 import com.netflix.priam.backup.IncrementalBackup;
 import com.netflix.priam.config.IBackupRestoreConfig;
 import com.netflix.priam.config.IConfiguration;
@@ -26,12 +25,9 @@ import com.netflix.priam.identity.token.ITokenRetriever;
 import com.netflix.priam.scheduler.PriamScheduler;
 import com.netflix.priam.scheduler.TaskTimer;
 import com.netflix.priam.tuner.CassandraTunerService;
-import java.util.HashMap;
-import java.util.Map;
-import javax.inject.Inject;
 import org.apache.commons.lang3.math.Fraction;
-import com.netflix.priam.backup.SnapshotDirectorySize;
-import com.netflix.priam.backup.IncrementalBackupDirectorySize;
+
+import javax.inject.Inject;
 
 
 /**
@@ -45,8 +41,6 @@ public class BackupV2Service implements IService {
     private final SnapshotMetaTask snapshotMetaTask;
     private final CassandraTunerService cassandraTunerService;
     private final ITokenRetriever tokenRetriever;
-    private final DirectorySize snapshotDirectorySize = new SnapshotDirectorySize();
-    private final DirectorySize incrementalBackupDirectorySize = new IncrementalBackupDirectorySize();
 
     @Inject
     public BackupV2Service(
@@ -110,10 +104,4 @@ public class BackupV2Service implements IService {
     @Override
     public void updateServicePost() throws Exception {}
 
-    public Map<String, Integer> countPendingBackupFiles() throws Exception {
-        Map<String, Integer> backupFiles = new HashMap<String, Integer>();
-        backupFiles.put("totalFiles", (snapshotDirectorySize.getFiles(configuration.getDataFileLocation()) +
-                incrementalBackupDirectorySize.getFiles(configuration.getDataFileLocation())));
-        return backupFiles;
-    }
 }

@@ -50,6 +50,8 @@ import org.slf4j.LoggerFactory;
 @Produces(MediaType.APPLICATION_JSON)
 public class BackupServletV2 {
     private static final Logger logger = LoggerFactory.getLogger(BackupServletV2.class);
+    private static final String INCREMENTALS = "/" + AbstractBackup.INCREMENTAL_BACKUP_FOLDER + "/";
+    private static final String SNAPSHOTS = "/" + SnapshotMetaTask.SNAPSHOT_PREFIX;
     private final BackupVerification backupVerification;
     private final IBackupStatusMgr backupStatusMgr;
     private final SnapshotMetaTask snapshotMetaService;
@@ -59,7 +61,8 @@ public class BackupServletV2 {
     private final Provider<AbstractBackupPath> pathProvider;
     private final BackupV2Service backupService;
     private final BackupNotificationMgr backupNotificationMgr;
-    private final PriamServer priamServer;
+    private final IConfiguration config;
+    private final DirectorySize directorySize;
 
     private static final String REST_SUCCESS = "[\"ok\"]";
 
@@ -69,13 +72,13 @@ public class BackupServletV2 {
             BackupVerification backupVerification,
             SnapshotMetaTask snapshotMetaService,
             BackupTTLTask backupTTLService,
-            IConfiguration configuration,
             IBackupFileSystem fileSystem,
             @Named("v2") IMetaProxy metaV2Proxy,
             Provider<AbstractBackupPath> pathProvider,
             BackupV2Service backupService,
             BackupNotificationMgr backupNotificationMgr,
-            PriamServer priamServer) {
+            IConfiguration config,
+            DirectorySize directorySize) {
         this.backupStatusMgr = backupStatusMgr;
         this.backupVerification = backupVerification;
         this.snapshotMetaService = snapshotMetaService;
@@ -85,7 +88,8 @@ public class BackupServletV2 {
         this.pathProvider = pathProvider;
         this.backupService = backupService;
         this.backupNotificationMgr = backupNotificationMgr;
-        this.priamServer = priamServer;
+        this.config = config;
+        this.directorySize = directorySize;
     }
 
     @GET
@@ -190,11 +194,8 @@ public class BackupServletV2 {
         Map<String, Object> responseMap = new HashMap<>();
 
         responseMap.put("tasksQueued", fs.getUploadTasksQueued());
-        responseMap.put("queueSize", priamServer.getConfiguration().getBackupQueueSize());
-        for (Map.Entry<String, Integer> entry :
-                backupService.countPendingBackupFiles().entrySet()) {
-            responseMap.put(entry.getKey(), entry.getValue());
-        }
+        responseMap.put("queueSize", config.getBackupQueueSize());
+        responseMap.put("totalFiles", directorySize.getFiles(config.getDataFileLocation(), SNAPSHOTS, INCREMENTALS));
 
         List<BackupMetadata> latestBackupMetadata =
                 backupStatusMgr.getLatestBackupMetadata(

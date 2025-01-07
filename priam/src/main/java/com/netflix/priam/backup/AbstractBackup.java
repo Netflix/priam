@@ -35,7 +35,7 @@ import org.slf4j.LoggerFactory;
 /** Abstract Backup class for uploading files to backup location */
 public abstract class AbstractBackup extends Task {
     private static final Logger logger = LoggerFactory.getLogger(AbstractBackup.class);
-    static final String INCREMENTAL_BACKUP_FOLDER = "backups";
+    public static final String INCREMENTAL_BACKUP_FOLDER = "backups";
     public static final String SNAPSHOT_FOLDER = "snapshots";
 
     @Inject
